@@ -1,0 +1,100 @@
+"use client";
+
+import { useActionState, useEffect, useState } from "react";
+import { addSubscription, getCategories } from "@/actions/subscription";
+import { Loader2, Plus } from "lucide-react";
+
+export function AddSubscriptionForm({ onSuccess }: { onSuccess?: () => void }) {
+    const [state, dispatch, isPending] = useActionState(addSubscription, undefined);
+    const [categories, setCategories] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (state?.success && onSuccess) {
+            onSuccess();
+        }
+    }, [state?.success, onSuccess]);
+
+    useEffect(() => {
+        getCategories().then(cats => {
+            setCategories(Array.from(new Set([...cats])));
+        });
+    }, []);
+
+    return (
+        <form action={dispatch} className="space-y-4">
+            <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">Name</label>
+                <input name="name" id="name" required placeholder="Netflix" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label htmlFor="price" className="text-sm font-medium">Price</label>
+                    <input name="price" id="price" type="number" step="0.01" required placeholder="19.99" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                </div>
+                <div className="space-y-2">
+                    <label htmlFor="currency" className="text-sm font-medium">Currency</label>
+                    <select name="currency" id="currency" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label htmlFor="frequencyUnit" className="text-sm font-medium">Repeats Every</label>
+                    <div className="flex gap-2">
+                        <input
+                            name="frequencyValue"
+                            type="number"
+                            min="1"
+                            defaultValue="1"
+                            className="flex h-10 w-16 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-center"
+                        />
+                        <select name="frequencyUnit" id="frequencyUnit" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                            <option value="Monthly">Month(s)</option>
+                            <option value="Yearly">Year(s)</option>
+                            <option value="Weekly">Week(s)</option>
+                            <option value="Daily">Day(s)</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <label htmlFor="nextRenewalDate" className="text-sm font-medium">Next Renewal</label>
+                    <input name="nextRenewalDate" id="nextRenewalDate" type="date" required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <label htmlFor="category" className="text-sm font-medium">Category</label>
+                <div className="flex gap-2">
+                    <select
+                        name="category"
+                        id="category"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        <option value="">No category</option>
+                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <label htmlFor="website" className="text-sm font-medium">Website (Optional)</label>
+                <input name="website" id="website" type="url" placeholder="https://example.com" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+
+            <div className="space-y-2">
+                <label htmlFor="description" className="text-sm font-medium">Description (Optional)</label>
+                <textarea name="description" id="description" placeholder="Add some notes..." className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+
+            {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+
+            <button type="submit" disabled={isPending} className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full mt-2">
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <><Plus className="mr-2 h-4 w-4" /> Add Subscription</>}
+            </button>
+        </form>
+    );
+}
