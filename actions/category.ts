@@ -17,7 +17,6 @@ export const createCategory = async (prevState: any, formData: FormData) => {
     }
 
     try {
-        // Check if exists
         const existing = await db.category.findFirst({
             where: { name, userId: session.user.id }
         });

@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { SummaryCards } from "@/components/dashboard/analytics/summary-cards";
 import { ChartsSection } from "@/components/dashboard/analytics/charts-section";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 
 export default async function AnalyticsPage() {
     const session = await auth();
@@ -104,16 +103,12 @@ export default async function AnalyticsPage() {
     });
 
     return (
-        <div className="min-h-screen bg-background p-6 sm:p-8 font-sans">
-            <div className="max-w-5xl mx-auto space-y-6">
-                <div className="flex items-center gap-4 mb-6">
-                    <Link href="/dashboard" className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-                        <ArrowLeft size={20} />
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
-                        <p className="text-muted-foreground text-sm">Insights into your subscription spending</p>
-                    </div>
+        <div className="min-h-screen bg-background font-sans text-foreground">
+            <DashboardHeader user={session.user} />
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 pb-24">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
+                    <p className="text-muted-foreground text-sm">Insights into your subscription spending</p>
                 </div>
 
                 <SummaryCards
@@ -129,7 +124,7 @@ export default async function AnalyticsPage() {
                     projectionData={projectionData}
                     currency={currency}
                 />
-            </div>
+            </main>
         </div>
     );
 }

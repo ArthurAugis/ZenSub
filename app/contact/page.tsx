@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { ArrowLeft, Mail, MapPin } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
 import { ContactForm } from "@/components/contact/contact-form";
 
 export default function ContactPage() {
     return (
-        <div className="min-h-screen bg-background p-6 sm:p-12 font-sans">
+        <div className="min-h-screen bg-background p-6 sm:p-12 font-sans relative">
             <div className="max-w-3xl mx-auto">
                 <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
                     <ArrowLeft size={16} />

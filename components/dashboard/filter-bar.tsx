@@ -53,7 +53,7 @@ export function FilterBar({ categories }: FilterBarProps) {
     ];
 
     return (
-        <div className="flex bg-muted/30 p-2 rounded-lg gap-4 items-center">
+        <div id="dashboard-filters" className="flex bg-muted/30 p-2 rounded-lg gap-4 items-center">
             <div className="flex items-center gap-2">
                 <CustomSelect
                     icon={<Filter size={16} />}

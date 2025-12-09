@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Bell, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { Bell } from "lucide-react";
 import { GlobalRulesSection } from "@/components/dashboard/notifications/global-rules-section";
 import { SpecificRulesList } from "@/components/dashboard/notifications/specific-rules-list";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 
 export default async function NotificationsPage() {
     const session = await auth();
@@ -27,16 +27,12 @@ export default async function NotificationsPage() {
     });
 
     return (
-        <div className="min-h-screen bg-background p-6 sm:p-8 font-sans">
-            <div className="max-w-3xl mx-auto space-y-6">
-                <div className="flex items-center gap-4 mb-6">
-                    <Link href="/dashboard" className="p-2 hover:bg-muted rounded-full transition-colors">
-                        <ArrowLeft size={20} />
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Notification Manager</h1>
-                        <p className="text-muted-foreground text-sm">Manage your comprehensive alert settings</p>
-                    </div>
+        <div className="min-h-screen bg-background font-sans text-foreground">
+            <DashboardHeader user={session.user} />
+            <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Notification Manager</h1>
+                    <p className="text-muted-foreground text-sm">Manage your comprehensive alert settings</p>
                 </div>
 
                 {/* Global Rules Section */}
@@ -59,7 +55,7 @@ export default async function NotificationsPage() {
                     <h2 className="font-semibold text-lg ml-1">Subscription Specific Alerts</h2>
                     <SpecificRulesList rules={specificRules} subscriptions={subscriptions} />
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

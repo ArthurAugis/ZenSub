@@ -16,6 +16,19 @@ export function EditSubscriptionForm({ subscription, onSuccess }: EditSubscripti
         subscription.category ? [subscription.category] : []
     );
 
+    const [currency, setCurrency] = useState(subscription.currency || "USD");
+    const [frequencyUnit, setFrequencyUnit] = useState(subscription.frequencyUnit || "Monthly");
+    const [category, setCategory] = useState(subscription.category || "");
+    const [isShared, setIsShared] = useState(subscription.isShared || false);
+
+    const [reminders, setReminders] = useState<{ value: number; unit: string }[]>(
+        subscription.notificationRules
+            ? subscription.notificationRules
+                .filter((r: any) => r.type === 'SPECIFIC')
+                .map((r: any) => ({ value: r.value, unit: r.unit }))
+            : []
+    );
+
     useEffect(() => {
         if (state?.success && onSuccess) {
             onSuccess();
@@ -44,11 +57,10 @@ export function EditSubscriptionForm({ subscription, onSuccess }: EditSubscripti
         setReminders(newReminders);
     };
 
-    // Format date for input type="date"
     const nextRenewalDate = new Date(subscription.nextRenewalDate).toISOString().split('T')[0];
 
     return (
-        <form action={dispatch} className="space-y-4">
+        <form action={dispatch} className="space-y-4 text-left">
             <input type="hidden" name="id" value={subscription.id} />
 
             <div className="space-y-2">
@@ -69,7 +81,8 @@ export function EditSubscriptionForm({ subscription, onSuccess }: EditSubscripti
                         onChange={setCurrency}
                         options={[
                             { label: "USD ($)", value: "USD" },
-                            { label: "EUR (€)", value: "EUR" }
+                            { label: "EUR (€)", value: "EUR" },
+                            { label: "GBP (£)", value: "GBP" }
                         ]}
                     />
                 </div>
@@ -84,7 +97,7 @@ export function EditSubscriptionForm({ subscription, onSuccess }: EditSubscripti
                             type="number"
                             min="1"
                             defaultValue={subscription.frequencyValue}
-                            className="flex h-10 w-16 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-center"
+                            className="flex h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-center"
                         />
                         <CustomSelect
                             name="frequencyUnit"
@@ -109,18 +122,49 @@ export function EditSubscriptionForm({ subscription, onSuccess }: EditSubscripti
             <div className="space-y-2">
                 <label htmlFor="category" className="text-sm font-medium">Category</label>
                 <div className="flex gap-2">
-                    <CustomSelect
+                    <input
                         name="category"
-                        value={category}
-                        onChange={setCategory}
-                        options={[
-                            { label: "No category", value: "" },
-                            ...categories.map(c => ({ label: c, value: c }))
-                        ]}
-                        placeholder="Select category"
+                        defaultValue={category}
+                        list="categories-list"
+                        placeholder="Select or type..."
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
+                    <datalist id="categories-list">
+                        {categories.map((c) => (
+                            <option key={c} value={c} />
+                        ))}
+                    </datalist>
                 </div>
             </div>
+
+            <div className="flex items-center space-x-2 border p-3 rounded-md bg-muted/20">
+                <input
+                    type="checkbox"
+                    id="isShared"
+                    name="isShared"
+                    checked={isShared}
+                    onChange={(e) => setIsShared(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                />
+                <label htmlFor="isShared" className="flex-1 cursor-pointer text-sm font-medium">This is a shared subscription</label>
+            </div>
+
+            {isShared && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <label htmlFor="sharedCount" className="text-sm font-medium">Total People Splitting</label>
+                    <input
+                        id="sharedCount"
+                        name="sharedCount"
+                        type="number"
+                        min="2"
+                        defaultValue={subscription.sharedCount || 2}
+                        placeholder="e.g. 2"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    />
+                    <p className="text-xs text-muted-foreground">The price will be divided by this number calculation.</p>
+                </div>
+            )}
 
             <div className="space-y-2">
                 <label htmlFor="website" className="text-sm font-medium">Website</label>

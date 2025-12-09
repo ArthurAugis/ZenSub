@@ -1,146 +1,175 @@
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
 import { SubscriptionList } from "@/components/dashboard/subscription-list";
 import { AddSubscriptionButton } from "@/components/dashboard/add-subscription-button";
 import { AddCategoryButton } from "@/components/dashboard/add-category-button";
-import { db } from "@/lib/db";
 import { FilterBar } from "@/components/dashboard/filter-bar";
-import { PieChart, CheckCircle2, Bell, LogOut, Calendar } from "lucide-react";
+import { PieChart, Calendar } from "lucide-react";
+import { convertCurrency, getExchangeRates } from "@/lib/currency";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { DollarSign } from "lucide-react";
+import { DashboardTutorial } from "@/components/dashboard/dashboard-tutorial";
 
 export default async function DashboardPage(props: { searchParams: Promise<any> }) {
     const searchParams = await props.searchParams;
     const session = await auth();
+    const rates = await getExchangeRates();
+    const query = searchParams?.query || "";
+    const filter = searchParams?.filter || "all";
+    const sort = searchParams?.sort || "date_asc";
+    const categoryParam = searchParams?.category || "all";
 
-    if (!session) {
+    if (!session?.user?.id) {
         redirect("/login");
     }
 
-    const categories = await db.category.findMany({
-        where: { userId: session.user?.id },
-        orderBy: { name: 'asc' }
+    const user = await db.user.findUnique({
+        where: { id: session.user.id },
+        select: { currency: true, hasSeenTutorial: true }
     });
-    const categoryNames = categories.map(c => c.name);
+    const userCurrency = user?.currency || "USD";
+    const hasSeenTutorial = user?.hasSeenTutorial || false;
+
+    let orderBy: any = { nextRenewalDate: 'asc' };
+    if (sort === 'date_desc') orderBy = { nextRenewalDate: 'desc' };
+    else if (sort === 'price_asc') orderBy = { price: 'asc' };
+    else if (sort === 'price_desc') orderBy = { price: 'desc' };
+    else if (sort === 'name_asc') orderBy = { name: 'asc' };
+    else if (sort === 'name_desc') orderBy = { name: 'desc' };
+
+    let where: any = {
+        userId: session.user.id,
+        name: { contains: query }
+    };
+
+    if (categoryParam !== 'all') {
+        where.category = categoryParam;
+    }
+
+    if (filter === 'active') where.status = 'Active';
+    else if (filter === 'inactive') where.status = 'Inactive';
 
     const subscriptions = await db.subscription.findMany({
-        where: { userId: session.user?.id },
-        orderBy: { nextRenewalDate: 'asc' }
+        where,
+        orderBy
     });
 
-    const totalMonthlySpend = subscriptions.reduce((acc, sub) => {
-        let monthly = sub.price;
+    const categoriesData = await db.category.findMany({
+        where: { userId: session.user.id },
+        select: { name: true },
+        orderBy: { name: 'asc' }
+    });
+    const categories = categoriesData.map(c => c.name);
+
+    const allActiveSubscriptions = await db.subscription.findMany({
+        where: {
+            userId: session.user.id,
+            status: 'Active'
+        }
+    });
+
+    let totalMonthlySpend = 0;
+    allActiveSubscriptions.forEach(sub => {
+        let price = sub.price;
+
+        if (sub.isShared && sub.sharedCount > 1) {
+            price = price / sub.sharedCount;
+        }
+
+        if (sub.currency !== userCurrency) {
+            price = convertCurrency(price, sub.currency, userCurrency, rates);
+        }
+
+        let monthly = price;
         const unit = sub.frequencyUnit || 'Monthly';
         const val = sub.frequencyValue || 1;
 
-        if (unit === 'Yearly') monthly = sub.price / (12 * val);
-        else if (unit === 'Monthly') monthly = sub.price / val;
-        else if (unit === 'Weekly') monthly = (sub.price * 52) / (12 * val);
-        else if (unit === 'Daily') monthly = (sub.price * 365) / (12 * val);
+        if (unit === 'Yearly') monthly = price / (12 * val);
+        else if (unit === 'Monthly') monthly = price / val;
+        else if (unit === 'Weekly') monthly = (price * 52) / (12 * val);
+        else if (unit === 'Daily') monthly = (price * 365) / (12 * val);
 
-        return acc + monthly;
-    }, 0);
+        totalMonthlySpend += monthly;
+    });
 
-    const activeSubscriptions = subscriptions.filter(s => s.status === 'Active').length;
+    const totalActiveCount = allActiveSubscriptions.length;
 
     let nextRenewalDays = "N/A";
-    let daysUntil = 0;
-    if (subscriptions.length > 0) {
-        const nextDate = new Date(subscriptions[0].nextRenewalDate);
+    if (allActiveSubscriptions.length > 0) {
+        const sortedActive = [...allActiveSubscriptions].sort((a, b) => a.nextRenewalDate.getTime() - b.nextRenewalDate.getTime());
+        const nextDate = sortedActive[0].nextRenewalDate;
         const today = new Date();
-        const diffTime = Math.abs(nextDate.getTime() - today.getTime());
-        daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        nextRenewalDays = `${daysUntil} Days`;
+        const diffTime = nextDate.getTime() - today.getTime();
+        const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        nextRenewalDays = `${Math.max(0, daysUntil)} Days`;
     }
 
-    const isUrgent = daysUntil <= 3 && subscriptions.length > 0;
-
     return (
-        <div className="min-h-screen bg-background p-6 sm:p-8 font-sans">
-            <div className="max-w-5xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-                        <p className="text-muted-foreground text-sm">Welcome back, {session.user?.name}</p>
+        <div className="min-h-screen bg-background font-sans text-foreground">
+            {/* Header */}
+            <DashboardHeader user={session.user} />
+
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                {/* Stats Grid */}
+                <div id="dashboard-stats" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-medium text-muted-foreground">Monthly Spend</h3>
+                            <div className="p-2 bg-green-500/10 rounded-full">
+                                <DollarSign size={16} className="text-green-500" />
+                            </div>
+                        </div>
+                        <div className="text-3xl font-bold tracking-tight">
+                            {userCurrency === 'EUR' ? '€' : userCurrency === 'GBP' ? '£' : '$'}
+                            {totalMonthlySpend.toFixed(2)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 text-green-600 flex items-center gap-1">
+                            For {totalActiveCount} active subs
+                        </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <a href="/dashboard/calendar" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors bg-card border border-border rounded-md hover:bg-muted h-9">
-                            <Calendar size={16} />
-                        </a>
-                        <a href="/dashboard/analytics" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors bg-card border border-border rounded-md hover:bg-muted h-9">
-                            <PieChart size={16} />
-                        </a>
-                        <a href="/dashboard/notifications" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors bg-card border border-border rounded-md hover:bg-muted h-9">
-                            <Bell size={16} />
-                        </a>
-                        <AddCategoryButton />
-                        <AddSubscriptionButton />
-                        <form action={async () => { "use server"; await signOut({ redirectTo: "/" }); }}>
-                            <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-destructive transition-colors bg-card border border-border rounded-md hover:bg-muted h-9">
-                                <LogOut size={16} />
-                            </button>
-                        </form>
+
+                    <div className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-medium text-muted-foreground">Active Subscriptions</h3>
+                            <div className="p-2 bg-blue-500/10 rounded-full">
+                                <PieChart size={16} className="text-blue-500" />
+                            </div>
+                        </div>
+                        <div className="text-3xl font-bold tracking-tight">{totalActiveCount}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Tracking {allActiveSubscriptions.length} items
+                        </p>
+                    </div>
+
+                    <div className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-medium text-muted-foreground">Next Renewal</h3>
+                            <div className="p-2 bg-orange-500/10 rounded-full">
+                                <Calendar size={16} className="text-orange-500" />
+                            </div>
+                        </div>
+                        <div className="text-3xl font-bold tracking-tight">{nextRenewalDays}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Days until next payment
+                        </p>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-6">
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {/* Card 1: Total Spend */}
-                        <div className="bg-card rounded-xl border border-border p-4 flex flex-col justify-between shadow-sm hover:border-primary/20 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                                    <PieChart size={18} />
-                                </div>
-                                <span className="text-xs font-medium text-muted-foreground bg-secondary px-2 py-1 rounded-full">Monthly</span>
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold tracking-tight">${totalMonthlySpend.toFixed(0)}</div>
-                                <div className="text-xs text-muted-foreground font-medium mt-1">Total Monthly Spend</div>
-                            </div>
-                        </div>
-
-                        {/* Card 2: Active Subs */}
-                        <div className="bg-card rounded-xl border border-border p-4 flex flex-col justify-between shadow-sm hover:border-primary/20 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
-                                    <CheckCircle2 size={18} />
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold tracking-tight">{activeSubscriptions}</div>
-                                <div className="text-xs text-muted-foreground font-medium mt-1">Active Subscriptions</div>
-                            </div>
-                        </div>
-
-                        {/* Card 3: Next Renewal */}
-                        <div className="bg-card rounded-xl border border-border p-4 flex flex-col justify-between shadow-sm hover:border-primary/20 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
-                                    <Bell size={18} />
-                                </div>
-                                {isUrgent && <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">Urgent</span>}
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold tracking-tight">{nextRenewalDays}</div>
-                                <div className="text-xs text-muted-foreground font-medium mt-1">Next Renewal</div>
-                            </div>
-                        </div>
+                {/* Main Content */}
+                <div className="space-y-6 pb-24">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <h2 className="text-xl font-semibold tracking-tight">Your Subscriptions</h2>
+                        <FilterBar categories={categories} />
                     </div>
 
-                    {/* Subscription List Container (Full Width) */}
-                    <div className="bg-card rounded-xl border border-border flex flex-col overflow-visible shadow-sm min-h-[400px]">
-                        <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
-                            <div className="font-semibold text-sm">Recent Activity</div>
-                            <FilterBar categories={categoryNames} />
-                        </div>
-                        <div className="p-2 space-y-1">
-                            <SubscriptionList searchParams={searchParams} />
-                        </div>
-                    </div>
-
+                    <SubscriptionList
+                        initialSubscriptions={subscriptions}
+                        userCurrency={userCurrency}
+                    />
                 </div>
-            </div>
+            </main>
+            <DashboardTutorial hasSeenTutorial={hasSeenTutorial} />
         </div>
     );
 }

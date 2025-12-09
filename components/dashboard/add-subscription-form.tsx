@@ -8,12 +8,12 @@ import { CustomSelect } from "@/components/ui/custom-select";
 export function AddSubscriptionForm({ onSuccess }: { onSuccess?: () => void }) {
     const [state, dispatch, isPending] = useActionState(addSubscription, undefined);
     const [categories, setCategories] = useState<string[]>([]);
+    const [isShared, setIsShared] = useState(false);
 
     const [currency, setCurrency] = useState("USD");
     const [frequencyUnit, setFrequencyUnit] = useState("Monthly");
     const [category, setCategory] = useState("");
 
-    // Reminders state
     const [reminders, setReminders] = useState<{ value: number; unit: string }[]>([
         { value: 1, unit: 'Days' }
     ]);
@@ -64,7 +64,8 @@ export function AddSubscriptionForm({ onSuccess }: { onSuccess?: () => void }) {
                         onChange={setCurrency}
                         options={[
                             { label: "USD ($)", value: "USD" },
-                            { label: "EUR (€)", value: "EUR" }
+                            { label: "EUR (€)", value: "EUR" },
+                            { label: "GBP (£)", value: "GBP" }
                         ]}
                     />
                 </div>
@@ -116,6 +117,34 @@ export function AddSubscriptionForm({ onSuccess }: { onSuccess?: () => void }) {
                     />
                 </div>
             </div>
+
+            <div className="flex items-center space-x-2 border p-3 rounded-md bg-muted/20">
+                <input
+                    type="checkbox"
+                    id="isShared"
+                    name="isShared"
+                    checked={isShared}
+                    onChange={(e) => setIsShared(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                />
+                <label htmlFor="isShared" className="flex-1 cursor-pointer text-sm font-medium">This is a shared subscription</label>
+            </div>
+
+            {isShared && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <label htmlFor="sharedCount" className="text-sm font-medium">Total People Splitting</label>
+                    <input
+                        id="sharedCount"
+                        name="sharedCount"
+                        type="number"
+                        min="2"
+                        defaultValue={2}
+                        placeholder="e.g. 2 for you + 1 other"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    />
+                    <p className="text-xs text-muted-foreground">The price will be divided by this number for your statistics.</p>
+                </div>
+            )}
 
             <div className="space-y-2">
                 <label htmlFor="website" className="text-sm font-medium">Website</label>

@@ -8,32 +8,34 @@ generator client {
 }
 
 model User {
-  id            String         @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String?        @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
   password      String?
+  currency      String    @default("USD")
   accounts      Account[]
   sessions      Session[]
   subscriptions Subscription[]
   categories    Category[]
   notificationRules NotificationRule[]
+  hasSeenTutorial Boolean @default(false)
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  
+  access_token       String?  
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  
+  session_state      String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -72,8 +74,10 @@ model Subscription {
   description    String?
   website        String?
   logoUrl        String?
-  // Reminders are now handled by NotificationRule relation
   
+  isShared       Boolean  @default(false)
+  sharedCount    Int      @default(1)
+
   status         String   @default("Active")
   
   createdAt      DateTime @default(now())
@@ -98,8 +102,8 @@ model NotificationRule {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   value       Int
-  unit        String   // "Days", "Weeks", "Months", "Years"
-  type        String   @default("SPECIFIC") // "GLOBAL", "SPECIFIC"
+  unit        String
+  type        String   @default("SPECIFIC") 
   
   subscriptions Subscription[]
   

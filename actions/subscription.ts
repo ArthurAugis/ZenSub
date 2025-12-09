@@ -31,6 +31,17 @@ export const addSubscription = async (prevState: any, formData: FormData) => {
     const website = formData.get("website") as string;
     const reminders = formData.get("reminders") as string;
 
+    const isShared = formData.get("isShared") === "on";
+    const sharedCountStr = formData.get("sharedCount") as string;
+    let sharedCount = 1;
+
+    if (isShared && sharedCountStr) {
+        const parsed = parseInt(sharedCountStr);
+        if (!isNaN(parsed) && parsed > 0) {
+            sharedCount = parsed;
+        }
+    }
+
     let logoUrl = null;
     if (website) {
         try {
@@ -92,6 +103,8 @@ export const addSubscription = async (prevState: any, formData: FormData) => {
                 website,
                 logoUrl,
                 status: "Active",
+                isShared,
+                sharedCount,
                 notificationRules: {
                     create: notificationRulesData
                 }
@@ -134,6 +147,17 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
     const website = formData.get("website") as string;
     const reminders = formData.get("reminders") as string;
 
+    const isShared = formData.get("isShared") === "on";
+    const sharedCountStr = formData.get("sharedCount") as string;
+    let sharedCount = 1;
+
+    if (isShared && sharedCountStr) {
+         const parsed = parseInt(sharedCountStr);
+        if (!isNaN(parsed) && parsed > 0) {
+            sharedCount = parsed;
+        }
+    }
+
     let logoUrl = null;
     if (website) {
         try {
@@ -147,7 +171,6 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
         return { error: "Invalid data" };
     }
 
-    // Verify ownership
     const existing = await db.subscription.findUnique({
         where: { id }
     });
@@ -195,6 +218,8 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
                 category,
                 description,
                 website,
+                isShared,
+                sharedCount,
                 ...(logoUrl ? { logoUrl } : {}),
                 notificationRules: {
                     create: notificationRulesData
