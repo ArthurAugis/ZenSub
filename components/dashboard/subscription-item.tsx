@@ -76,9 +76,15 @@ export function SubscriptionItem({ subscription }: SubscriptionItemProps) {
                 className={`group flex items-center justify-between p-3 rounded-lg transition-all cursor-pointer border ${isSelected ? 'bg-muted border-primary/50' : 'border-transparent hover:bg-muted/50 hover:border-border/50'}`}
             >
                 <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full ${colors[colorIndex]} text-white flex items-center justify-center font-bold text-lg shadow-sm`}>
-                        {userInitial}
-                    </div>
+                    {subscription.logoUrl ? (
+                        <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center p-1 overflow-hidden border border-border">
+                            <img src={subscription.logoUrl} alt={subscription.name} className="w-full h-full object-contain" />
+                        </div>
+                    ) : (
+                        <div className={`w-10 h-10 rounded-full ${colors[colorIndex]} text-white flex items-center justify-center font-bold text-lg shadow-sm`}>
+                            {userInitial}
+                        </div>
+                    )}
                     <div>
                         <div className="font-semibold text-sm">{subscription.name}</div>
                         <div className="text-xs text-muted-foreground">
@@ -138,9 +144,15 @@ export function SubscriptionItem({ subscription }: SubscriptionItemProps) {
                                 Renews every {subscription.frequencyValue} {subscription.frequencyUnit}
                             </div>
                         </div>
-                        <div className={`w-12 h-12 rounded-full ${colors[colorIndex]} text-white flex items-center justify-center font-bold text-xl`}>
-                            {userInitial}
-                        </div>
+                        {subscription.logoUrl ? (
+                            <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center p-1 overflow-hidden border border-border">
+                                <img src={subscription.logoUrl} alt={subscription.name} className="w-full h-full object-contain" />
+                            </div>
+                        ) : (
+                            <div className={`w-12 h-12 rounded-full ${colors[colorIndex]} text-white flex items-center justify-center font-bold text-xl`}>
+                                {userInitial}
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

@@ -4,14 +4,22 @@ import { SubscriptionList } from "@/components/dashboard/subscription-list";
 import { AddSubscriptionButton } from "@/components/dashboard/add-subscription-button";
 import { AddCategoryButton } from "@/components/dashboard/add-category-button";
 import { db } from "@/lib/db";
-import { PieChart, CheckCircle2, Bell, LogOut } from "lucide-react";
+import { FilterBar } from "@/components/dashboard/filter-bar";
+import { PieChart, CheckCircle2, Bell, LogOut, Calendar } from "lucide-react";
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: { searchParams: Promise<any> }) {
+    const searchParams = await props.searchParams;
     const session = await auth();
 
     if (!session) {
         redirect("/login");
     }
+
+    const categories = await db.category.findMany({
+        where: { userId: session.user?.id },
+        orderBy: { name: 'asc' }
+    });
+    const categoryNames = categories.map(c => c.name);
 
     const subscriptions = await db.subscription.findMany({
         where: { userId: session.user?.id },
@@ -55,6 +63,15 @@ export default async function DashboardPage() {
                         <p className="text-muted-foreground text-sm">Welcome back, {session.user?.name}</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <a href="/dashboard/calendar" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors bg-card border border-border rounded-md hover:bg-muted h-9">
+                            <Calendar size={16} />
+                        </a>
+                        <a href="/dashboard/analytics" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors bg-card border border-border rounded-md hover:bg-muted h-9">
+                            <PieChart size={16} />
+                        </a>
+                        <a href="/dashboard/notifications" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors bg-card border border-border rounded-md hover:bg-muted h-9">
+                            <Bell size={16} />
+                        </a>
                         <AddCategoryButton />
                         <AddSubscriptionButton />
                         <form action={async () => { "use server"; await signOut({ redirectTo: "/" }); }}>
@@ -115,10 +132,10 @@ export default async function DashboardPage() {
                     <div className="bg-card rounded-xl border border-border flex flex-col overflow-visible shadow-sm min-h-[400px]">
                         <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
                             <div className="font-semibold text-sm">Recent Activity</div>
-                            <div className="text-xs text-muted-foreground">Filter by: <span className="text-foreground font-medium">Date</span></div>
+                            <FilterBar categories={categoryNames} />
                         </div>
                         <div className="p-2 space-y-1">
-                            <SubscriptionList />
+                            <SubscriptionList searchParams={searchParams} />
                         </div>
                     </div>
 

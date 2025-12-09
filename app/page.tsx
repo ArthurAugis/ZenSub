@@ -306,9 +306,9 @@ export default function LandingPage() {
             <span className="font-bold text-lg">ZenSub</span>
           </div>
           <div className="flex gap-8 text-sm text-muted-foreground">
-            <Link href="#" className="hover:text-foreground">Privacy</Link>
-            <Link href="#" className="hover:text-foreground">Terms</Link>
-            <Link href="#" className="hover:text-foreground">Contact</Link>
+            <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground">Terms</Link>
+            <Link href="/contact" className="hover:text-foreground">Contact</Link>
           </div>
           <div className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} ZenSub Inc.

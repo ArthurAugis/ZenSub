@@ -37,5 +37,5 @@ export const register = async (prevState: any, formData: FormData) => {
     const verificationToken = await generateVerificationToken(email);
     await sendVerificationEmail(verificationToken.identifier, verificationToken.token);
 
-    return { success: "Confirmation email sent!" };
+    return { success: "Confirmation email sent! Check your inbox! (Check spam folder if not received)" };
 };

@@ -16,7 +16,6 @@ export const addSubscription = async (prevState: any, formData: FormData) => {
     const price = parseFloat(priceStr);
     const currency = formData.get("currency") as string || "USD";
     
-    // Frequency
     const frequencyValueStr = formData.get("frequencyValue") as string || "1";
     const frequencyValue = parseInt(frequencyValueStr);
     const frequencyUnit = formData.get("frequencyUnit") as string || "Monthly";
@@ -30,6 +29,17 @@ export const addSubscription = async (prevState: any, formData: FormData) => {
     const category = formData.get("category") as string;
     const description = formData.get("description") as string;
     const website = formData.get("website") as string;
+    const reminders = formData.get("reminders") as string;
+
+    let logoUrl = null;
+    if (website) {
+        try {
+            const domain = new URL(website.startsWith('http') ? website : `https://${website}`).hostname;
+            logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        } catch (e) {
+            console.error("Failed to get logo URL", e);
+        }
+    }
 
     if (category) {
         try {
@@ -50,6 +60,23 @@ export const addSubscription = async (prevState: any, formData: FormData) => {
         return { error: "Invalid name or price" };
     }
 
+    let notificationRulesData: any[] = [];
+    if (reminders) {
+        try {
+            const parsed = JSON.parse(reminders);
+            if (Array.isArray(parsed)) {
+                notificationRulesData = parsed.map((r: any) => ({
+                    value: parseInt(r.value),
+                    unit: r.unit,
+                    type: "SPECIFIC",
+                    userId: session.user.id
+                }));
+            }
+        } catch (e) {
+            console.error("Failed to parse reminders", e);
+        }
+    }
+
     try {
         await db.subscription.create({
             data: {
@@ -63,7 +90,11 @@ export const addSubscription = async (prevState: any, formData: FormData) => {
                 category,
                 description,
                 website,
+                logoUrl,
                 status: "Active",
+                notificationRules: {
+                    create: notificationRulesData
+                }
             },
         });
         
@@ -101,6 +132,16 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
     const category = formData.get("category") as string;
     const description = formData.get("description") as string;
     const website = formData.get("website") as string;
+    const reminders = formData.get("reminders") as string;
+
+    let logoUrl = null;
+    if (website) {
+        try {
+            const domain = new URL(website.startsWith('http') ? website : `https://${website}`).hostname;
+            logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        } catch (e) {
+        }
+    }
 
     if (!id || !name || isNaN(price)) {
         return { error: "Invalid data" };
@@ -115,7 +156,33 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
         return { error: "Unauthorized" };
     }
 
+    let notificationRulesData: any[] = [];
+    if (reminders) {
+        try {
+            const parsed = JSON.parse(reminders);
+            if (Array.isArray(parsed)) {
+                notificationRulesData = parsed.map((r: any) => ({
+                    value: parseInt(r.value),
+                    unit: r.unit,
+                    type: "SPECIFIC",
+                    userId: session.user.id
+                }));
+            }
+        } catch (e) {
+             console.error("Failed to parse reminders", e);
+        }
+    }
+
     try {
+        await db.notificationRule.deleteMany({
+            where: {
+                type: "SPECIFIC",
+                subscriptions: {
+                    some: { id: id }
+                }
+            }
+        });
+
         await db.subscription.update({
             where: { id },
             data: {
@@ -128,6 +195,10 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
                 category,
                 description,
                 website,
+                ...(logoUrl ? { logoUrl } : {}),
+                notificationRules: {
+                    create: notificationRulesData
+                }
             },
         });
         

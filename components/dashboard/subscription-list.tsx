@@ -2,13 +2,35 @@ import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { SubscriptionItem } from "./subscription-item";
 
-export async function SubscriptionList() {
+interface SubscriptionListProps {
+    searchParams?: {
+        sort?: string;
+        category?: string;
+    }
+}
+
+export async function SubscriptionList({ searchParams }: SubscriptionListProps) {
     const session = await auth();
     if (!session?.user?.id) return null;
 
+    const { sort, category } = searchParams || {};
+
+    let orderBy: any = { nextRenewalDate: 'asc' };
+    if (sort === 'date_desc') orderBy = { nextRenewalDate: 'desc' };
+    else if (sort === 'price_asc') orderBy = { price: 'asc' };
+    else if (sort === 'price_desc') orderBy = { price: 'desc' };
+    else if (sort === 'name_asc') orderBy = { name: 'asc' };
+    else if (sort === 'name_desc') orderBy = { name: 'desc' };
+
+    let where: any = { userId: session.user.id };
+    if (category && category !== 'all') {
+        where.category = category;
+    }
+
     const subscriptions = await db.subscription.findMany({
-        where: { userId: session.user.id },
-        orderBy: { nextRenewalDate: 'asc' }
+        where,
+        orderBy,
+        include: { notificationRules: true }
     });
 
     if (subscriptions.length === 0) {
