@@ -80,7 +80,7 @@ export const addSubscription = async (prevState: any, formData: FormData) => {
                     value: parseInt(r.value),
                     unit: r.unit,
                     type: "SPECIFIC",
-                    userId: session.user.id
+                    userId: session.user!.id
                 }));
             }
         } catch (e) {
@@ -188,7 +188,7 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
                     value: parseInt(r.value),
                     unit: r.unit,
                     type: "SPECIFIC",
-                    userId: session.user.id
+                    userId: session.user!.id
                 }));
             }
         } catch (e) {

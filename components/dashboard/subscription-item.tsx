@@ -12,12 +12,12 @@ interface SubscriptionItemProps {
     userCurrency?: string;
 }
 
-const getSafeLogoUrl = (url: string | null | undefined) => {
+const getSafeLogoUrl = (url: string | null | undefined): string | undefined => {
     if (url && url.includes('logo.clearbit.com')) {
         const domain = url.split('/').pop();
         return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
     }
-    return url;
+    return url || undefined;
 };
 
 export function SubscriptionItem({ subscription, userCurrency }: SubscriptionItemProps) {
