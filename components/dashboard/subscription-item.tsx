@@ -22,7 +22,7 @@ const getSafeLogoUrl = (url: string | null | undefined): string | undefined => {
 
 export function SubscriptionItem({ subscription, userCurrency }: SubscriptionItemProps) {
     const [isSelected, setIsSelected] = useState(false);
-    const [menuSide, setMenuSide] = useState<'left' | 'right'>('right');
+    const [menuSide, setMenuSide] = useState<'left' | 'right' | 'bottom'>('right');
 
     const symbol = subscription.currency === 'GDP' ? '£' : subscription.currency === 'EUR' ? '€' : '$';
 
@@ -42,6 +42,12 @@ export function SubscriptionItem({ subscription, userCurrency }: SubscriptionIte
 
     const handleClick = (e: React.MouseEvent) => {
         if (!itemRef.current) return;
+
+        if (window.innerWidth < 640) {
+            setMenuSide('bottom');
+            setIsSelected(true);
+            return;
+        }
 
         const rect = itemRef.current.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
@@ -74,14 +80,14 @@ export function SubscriptionItem({ subscription, userCurrency }: SubscriptionIte
     };
 
     return (
-        <div className="relative mb-2">
+        <div className="relative mb-2 min-w-0">
             {/* Main List Item */}
             <div
                 ref={itemRef}
                 onClick={handleClick}
                 className={`group flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-lg transition-all cursor-pointer border gap-3 sm:gap-0 ${isSelected ? 'bg-muted border-primary/50' : 'border-transparent hover:bg-muted/50 hover:border-border/50'}`}
             >
-                <div className="flex items-center gap-4 w-full sm:w-auto">
+                <div className="flex items-center gap-4 w-full sm:flex-1 sm:min-w-0">
                     {subscription.logoUrl ? (
                         <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center p-1 overflow-hidden border border-border flex-shrink-0">
                             <img src={getSafeLogoUrl(subscription.logoUrl)} alt={subscription.name} className="w-full h-full object-contain" />
@@ -92,8 +98,8 @@ export function SubscriptionItem({ subscription, userCurrency }: SubscriptionIte
                         </div>
                     )}
                     <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <div className="font-semibold text-sm truncate">{subscription.name}</div>
+                        <div className="flex items-center gap-2">
+                            <div className="font-semibold text-sm truncate min-w-0">{subscription.name}</div>
                             {subscription.isShared && (
                                 <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded-sm flex-shrink-0">Shared</span>
                             )}
@@ -120,28 +126,38 @@ export function SubscriptionItem({ subscription, userCurrency }: SubscriptionIte
             <AnimatePresence>
                 {isSelected && (
                     <motion.div
-                        initial={{ opacity: 0, x: menuSide === 'right' ? 10 : -10 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, x: menuSide === 'bottom' ? 0 : (menuSide === 'right' ? 10 : -10), y: menuSide === 'bottom' ? -10 : 0 }}
+                        animate={{ opacity: 1, x: 0, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className={`absolute top-0 bottom-0 flex items-center z-50 ${menuSide === 'right' ? '-right-40' : '-left-40'}`}
+                        className={`absolute z-50 flex items-center 
+                            ${menuSide === 'right' ? 'top-0 bottom-0 -right-40' :
+                                menuSide === 'left' ? 'top-0 bottom-0 -left-40' :
+                                    'top-full left-0 right-0 mt-2 justify-center' /* Bottom placement */
+                            }`}
                     >
-                        <div className="relative bg-popover text-popover-foreground border border-border shadow-md rounded-md p-2 min-w-[140px] flex flex-col gap-1">
+                        <div className={`relative bg-black text-white border border-border shadow-md rounded-md p-2 min-w-[140px] flex 
+                            ${menuSide === 'bottom' ? 'flex-row w-full justify-around' : 'flex-col gap-1'}`}
+                        >
                             {/* Arrow */}
                             <div
-                                className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-popover border-t border-r border-border rotate-45 ${menuSide === 'right' ? '-left-[7px] border-t-0 border-r-0 border-b border-l' : '-right-[7px]'}`}
+                                className={`absolute w-3 h-3 bg-black border-border rotate-45 
+                                    ${menuSide === 'right' ? 'top-1/2 -translate-y-1/2 -left-[7px] border-l border-b' :
+                                        menuSide === 'left' ? 'top-1/2 -translate-y-1/2 -right-[7px] border-r border-t' :
+                                            '-top-[7px] left-1/2 -translate-x-1/2 border-l border-t' /* Bottom arrow */
+                                    }`}
                             />
 
-                            <button onClick={(e) => { e.stopPropagation(); setShowSummary(true); }} className="w-full flex items-center px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium cursor-pointer">
+                            <button onClick={(e) => { e.stopPropagation(); setShowSummary(true); }} className={`flex items-center px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium cursor-pointer ${menuSide === 'bottom' ? 'flex-1 justify-center' : 'w-full'}`}>
                                 <FileText className="mr-2 h-4 w-4" />
-                                Summary
+                                <span>Summary</span>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); setShowEdit(true); }} className="w-full flex items-center px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium cursor-pointer">
+                            <button onClick={(e) => { e.stopPropagation(); setShowEdit(true); }} className={`flex items-center px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium cursor-pointer ${menuSide === 'bottom' ? 'flex-1 justify-center' : 'w-full'}`}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                <span>Edit</span>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); setShowDelete(true); }} className="w-full flex items-center px-3 py-1.5 text-sm rounded-sm hover:bg-destructive/10 hover:text-destructive transition-colors font-medium cursor-pointer">
+                            <button onClick={(e) => { e.stopPropagation(); setShowDelete(true); }} className={`flex items-center px-3 py-1.5 text-sm rounded-sm hover:bg-destructive/10 hover:text-destructive transition-colors font-medium cursor-pointer ${menuSide === 'bottom' ? 'flex-1 justify-center' : 'w-full'}`}>
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                                <span>Delete</span>
                             </button>
                         </div>
                     </motion.div>

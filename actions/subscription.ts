@@ -15,14 +15,14 @@ export const addSubscription = async (prevState: any, formData: FormData) => {
     const priceStr = formData.get("price") as string;
     const price = parseFloat(priceStr);
     const currency = formData.get("currency") as string || "USD";
-    
+
     const frequencyValueStr = formData.get("frequencyValue") as string || "1";
     const frequencyValue = parseInt(frequencyValueStr);
     const frequencyUnit = formData.get("frequencyUnit") as string || "Monthly";
 
     const nextRenewalDateStr = formData.get("nextRenewalDate") as string;
     if (!nextRenewalDateStr) {
-         return { error: "Renewal Date is required" };
+        return { error: "Renewal Date is required" };
     }
     const nextRenewalDate = new Date(nextRenewalDateStr);
 
@@ -110,7 +110,7 @@ export const addSubscription = async (prevState: any, formData: FormData) => {
                 }
             },
         });
-        
+
         revalidatePath("/dashboard");
         return { success: "Subscription added!" };
     } catch (error) {
@@ -131,14 +131,14 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
     const priceStr = formData.get("price") as string;
     const price = parseFloat(priceStr);
     const currency = formData.get("currency") as string || "USD";
-    
+
     const frequencyValueStr = formData.get("frequencyValue") as string || "1";
     const frequencyValue = parseInt(frequencyValueStr);
     const frequencyUnit = formData.get("frequencyUnit") as string || "Monthly";
 
     const nextRenewalDateStr = formData.get("nextRenewalDate") as string;
     if (!nextRenewalDateStr) {
-         return { error: "Renewal Date is required" };
+        return { error: "Renewal Date is required" };
     }
     const nextRenewalDate = new Date(nextRenewalDateStr);
 
@@ -152,7 +152,7 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
     let sharedCount = 1;
 
     if (isShared && sharedCountStr) {
-         const parsed = parseInt(sharedCountStr);
+        const parsed = parseInt(sharedCountStr);
         if (!isNaN(parsed) && parsed > 0) {
             sharedCount = parsed;
         }
@@ -174,7 +174,7 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
     const existing = await db.subscription.findUnique({
         where: { id }
     });
-    
+
     if (!existing || existing.userId !== session.user.id) {
         return { error: "Unauthorized" };
     }
@@ -192,7 +192,7 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
                 }));
             }
         } catch (e) {
-             console.error("Failed to parse reminders", e);
+            console.error("Failed to parse reminders", e);
         }
     }
 
@@ -226,7 +226,7 @@ export const updateSubscription = async (prevState: any, formData: FormData) => 
                 }
             },
         });
-        
+
         revalidatePath("/dashboard");
         return { success: "Subscription updated!" };
     } catch (error) {
@@ -241,25 +241,69 @@ export const deleteSubscription = async (id: string) => {
 
     try {
         await db.subscription.delete({
-            where: { 
+            where: {
                 id,
-                userId: session.user.id 
+                userId: session.user.id
             }
         });
         revalidatePath("/dashboard");
         return { success: "Deleted successfully" };
     } catch (error) {
-         return { error: "Failed to delete" };
+        return { error: "Failed to delete" };
     }
 }
 
 export const getCategories = async () => {
     const session = await auth();
     if (!session?.user?.id) return [];
-    
+
     const categories = await db.category.findMany({
         where: { userId: session.user.id },
         orderBy: { name: 'asc' }
     });
     return categories.map(c => c.name);
+}
+
+export const checkAndRolloverSubscriptions = async (userId: string) => {
+    if (!userId) return;
+
+    const now = new Date();
+    const expiredSubs = await db.subscription.findMany({
+        where: {
+            userId,
+            status: "Active",
+            nextRenewalDate: {
+                lt: now
+            }
+        }
+    });
+
+    for (const sub of expiredSubs) {
+        let nextDate = new Date(sub.nextRenewalDate);
+        let updated = false;
+        let iterations = 0;
+        while (nextDate < now && iterations < 1000) {
+            updated = true;
+            const val = sub.frequencyValue || 1;
+            const unit = sub.frequencyUnit || "Monthly";
+
+            if (unit === "Daily") {
+                nextDate.setDate(nextDate.getDate() + val);
+            } else if (unit === "Weekly") {
+                nextDate.setDate(nextDate.getDate() + (val * 7));
+            } else if (unit === "Monthly") {
+                nextDate.setMonth(nextDate.getMonth() + val);
+            } else if (unit === "Yearly") {
+                nextDate.setFullYear(nextDate.getFullYear() + val);
+            }
+            iterations++;
+        }
+
+        if (updated) {
+            await db.subscription.update({
+                where: { id: sub.id },
+                data: { nextRenewalDate: nextDate }
+            });
+        }
+    }
 }

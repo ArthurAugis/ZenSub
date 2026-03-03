@@ -39,7 +39,7 @@ export function ChartsSection({ categoryData, projectionData, currency }: Charts
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    formatter={(value: number) => formatCurrency(value)}
+                                    formatter={(value: any) => formatCurrency(value)}
                                     contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a', borderRadius: '8px', color: '#f4f4f5' }}
                                     itemStyle={{ color: '#f4f4f5' }}
                                 />
@@ -82,7 +82,7 @@ export function ChartsSection({ categoryData, projectionData, currency }: Charts
                                 tickFormatter={(val) => `$${val}`}
                             />
                             <Tooltip
-                                formatter={(value: number) => formatCurrency(value)}
+                                formatter={(value: any) => formatCurrency(value)}
                                 cursor={{ fill: '#27272a', opacity: 0.2 }}
                                 contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a', borderRadius: '8px', color: '#f4f4f5' }}
                                 itemStyle={{ color: '#f4f4f5' }}

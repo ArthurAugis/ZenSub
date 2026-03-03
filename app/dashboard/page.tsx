@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { checkAndRolloverSubscriptions } from "@/actions/subscription";
 import { SubscriptionList } from "@/components/dashboard/subscription-list";
 import { AddSubscriptionButton } from "@/components/dashboard/add-subscription-button";
 import { AddCategoryButton } from "@/components/dashboard/add-category-button";
@@ -10,6 +11,7 @@ import { convertCurrency, getExchangeRates } from "@/lib/currency";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DollarSign } from "lucide-react";
 import { DashboardTutorial } from "@/components/dashboard/dashboard-tutorial";
+
 
 export default async function DashboardPage(props: { searchParams: Promise<any> }) {
     const searchParams = await props.searchParams;
@@ -23,6 +25,8 @@ export default async function DashboardPage(props: { searchParams: Promise<any> 
     if (!session?.user?.id) {
         redirect("/login");
     }
+
+    await checkAndRolloverSubscriptions(session.user.id);
 
     const user = await db.user.findUnique({
         where: { id: session.user.id },
@@ -104,6 +108,8 @@ export default async function DashboardPage(props: { searchParams: Promise<any> 
         const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         nextRenewalDays = `${Math.max(0, daysUntil)} Days`;
     }
+
+
 
     return (
         <div className="min-h-screen bg-background font-sans text-foreground">

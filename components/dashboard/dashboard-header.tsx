@@ -1,12 +1,11 @@
 "use client";
 
-import { LogOut, LayoutDashboard, Calendar, Bell, Settings, PieChart, Menu, X, Plus, FolderPlus } from "lucide-react";
+import { LogOut, Calendar, Bell, Settings, PieChart, Menu, X, Plus, FolderPlus } from "lucide-react";
 import { AddSubscriptionForm } from "@/components/dashboard/add-subscription-form";
 import { AddCategoryForm } from "@/components/dashboard/add-category-form";
 import { Modal } from "@/components/ui/modal";
 import Link from "next/link";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 
 interface DashboardHeaderProps {
@@ -32,7 +31,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     {/* Logo and Mobile Menu Toggle */}
                     <div className="flex items-center gap-3">
-                        <button onClick={toggleMenu} className="md:hidden p-2 text-muted-foreground hover:text-foreground">
+                        <button onClick={toggleMenu} className="md:hidden p-2 text-muted-foreground hover:text-foreground cursor-pointer">
                             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                         <Link href="/dashboard" className="flex items-center gap-2 group">
@@ -52,6 +51,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                                 <Calendar size={18} />
                                 <span className="hidden lg:inline">Calendar</span>
                             </Link>
+
                         </nav>
 
                         <div className="h-6 w-px bg-border mx-2" />
@@ -169,6 +169,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                                     <Calendar size={24} className="mb-2 text-primary" />
                                     <span className="text-sm font-medium">Calendar</span>
                                 </Link>
+
                             </div>
 
                             <div className="space-y-2">
@@ -183,11 +184,11 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                             </div>
 
                             <div className="space-y-2 pt-4 border-t border-border">
-                                <button onClick={() => { setIsAddSubscriptionOpen(true); setIsMenuOpen(false); }} className="flex items-center gap-3 w-full px-4 py-3 hover:bg-muted rounded-md transition-colors text-primary">
+                                <button onClick={() => { setIsAddSubscriptionOpen(true); setIsMenuOpen(false); }} className="flex items-center gap-3 w-full px-4 py-3 hover:bg-muted rounded-md transition-colors text-primary cursor-pointer">
                                     <Plus size={20} />
                                     <span className="font-medium">Add Subscription</span>
                                 </button>
-                                <button onClick={() => { setIsAddCategoryOpen(true); setIsMenuOpen(false); }} className="flex items-center gap-3 w-full px-4 py-3 hover:bg-muted rounded-md transition-colors">
+                                <button onClick={() => { setIsAddCategoryOpen(true); setIsMenuOpen(false); }} className="flex items-center gap-3 w-full px-4 py-3 hover:bg-muted rounded-md transition-colors cursor-pointer">
                                     <FolderPlus size={20} />
                                     <span className="font-medium">Add Category</span>
                                 </button>
@@ -196,7 +197,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                             <div className="pt-4 border-t border-border">
                                 <button
                                     onClick={() => signOut()}
-                                    className="flex items-center gap-3 w-full px-4 py-3 text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                                    className="flex items-center gap-3 w-full px-4 py-3 text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer"
                                 >
                                     <LogOut size={20} />
                                     <span className="font-medium">Sign Out</span>

@@ -9,7 +9,6 @@ export const currencies = [
 
 export type ExchangeRates = Record<string, number>;
 
-// Fallback rates if API fails
 const FALLBACK_RATES: ExchangeRates = {
     USD: 1.0,
     EUR: 0.95,
@@ -24,7 +23,7 @@ export async function getExchangeRates(): Promise<ExchangeRates> {
         const res = await fetch('https://api.frankfurter.app/latest?from=USD', { next: { revalidate: 3600 } }); // Cache for 1 hour
         if (!res.ok) throw new Error('Failed to fetch rates');
         const data = await res.json();
-        
+
         return { USD: 1, ...data.rates };
     } catch (error) {
         console.warn('Using fallback currency rates:', error);
@@ -35,7 +34,7 @@ export async function getExchangeRates(): Promise<ExchangeRates> {
 export function convertCurrency(amount: number, from: string, to: string, rates: ExchangeRates): number {
     const fromRate = rates[from] || 1;
     const toRate = rates[to] || 1;
-    
+
     const amountInUSD = amount / fromRate;
     return amountInUSD * toRate;
 }

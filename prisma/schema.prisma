@@ -21,6 +21,7 @@ model User {
   categories    Category[]
   notificationRules NotificationRule[]
   hasSeenTutorial Boolean @default(false)
+  createdAt     DateTime @default(now())
 }
 
 model Account {
