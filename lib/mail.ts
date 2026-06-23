@@ -1,8 +1,7 @@
 import nodemailer from "nodemailer";
 
 export const sendVerificationEmail = async (email: string, token: string) => {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const confirmLink = `${appUrl}/new-verification?token=${token}`;
+    const confirmLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/new-verification?token=${token}`;
 
     if (process.env.EMAIL_SERVER_HOST && process.env.EMAIL_SERVER_USER && process.env.EMAIL_SERVER_PASSWORD) {
         const transporter = nodemailer.createTransport({
